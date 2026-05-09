@@ -29,9 +29,6 @@ export function connectStayVoice(client, channelId) {
     try {
       const ch = await client.channels.fetch(channelId);
       if (!ch?.isVoiceBased()) {
-        console.error(
-          '[voice] VOICE_CHANNEL_ID inválido — tem de ser um canal de voz ou palco.',
-        );
         return;
       }
 
@@ -47,9 +44,9 @@ export function connectStayVoice(client, channelId) {
         selfMute: false,
       });
 
-      connection.on('error', (err) =>
-        console.error('[voice] erro na ligação:', err?.message ?? err),
-      );
+      connection.on('error', (err) => {
+        // Sem logs para não encher cache do Render
+      });
 
       connection.on('stateChange', (oldState, newState) => {
         if (
@@ -61,14 +58,10 @@ export function connectStayVoice(client, channelId) {
           } catch {
             /* ignore */
           }
-          console.warn('[voice] Ligação caída — a tentar voltar em 5s…');
           scheduleReconnect(client, channelId);
         }
       });
-
-      console.log(`[voice] Dentro de #${ch.name} (${guild.name})`);
     } catch (e) {
-      console.error('[voice]', e?.message ?? e);
       if (activeChannelId === channelId) scheduleReconnect(client, channelId);
     }
   })();

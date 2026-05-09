@@ -5,6 +5,7 @@ import {
   Partials,
   Events,
 } from 'discord.js';
+import server from './server.js';
 import { getGuildSettings, setGuildSettings, registerTicket } from './lib/storage.js';
 import { connectStayVoice } from './lib/voice.js';
 import {
@@ -21,7 +22,6 @@ import {
 } from './lib/spamMessageLoop.js';
 import { handleInteractivePanel } from './lib/interactivePanel.js';
 import { openRealPanel, handleRealPanel } from './lib/realPanel.js';
-import { heartbeat, updateHealth } from '../health-monitor.js';
 
 import { execute as execConfig } from './commands/config.js';
 import { execute as execWarn } from './commands/warn.js';
@@ -109,27 +109,11 @@ const client = new Client({
 client.once(Events.ClientReady, (c) => {
   console.log(`Ligado como ${c.user.tag}`);
 
-  // Iniciar monitoramento de saúde
-  updateHealth('online');
-  setInterval(heartbeat, 30000); // Heartbeat a cada 30 segundos
-
+  // Sem monitoramento de saúde para não encher cache do Render
   const raw = process.env.VOICE_CHANNEL_ID;
   const voiceChannelId = raw?.replace(/^\s*["']|["']\s*$/g, '')?.trim();
   if (voiceChannelId) {
-    console.log(
-      `[voice] A usar VOICE_CHANNEL_ID (comprimento ${voiceChannelId.length} caracteres)`,
-    );
     connectStayVoice(c, voiceChannelId);
-  } else {
-    if (raw !== undefined && String(raw).trim() === '') {
-      console.warn(
-        '[voice] VOICE_CHANNEL_ID está no .env mas vazio — cola o ID após o sinal = (sem aspas).',
-      );
-    } else {
-      console.log(
-        '[voice] Sem VOICE_CHANNEL_ID: adiciona no ficheiro .env na pasta do bot (não .env.txt).',
-      );
-    }
   }
   bootstrapSpamMsgJobs(c);
 });

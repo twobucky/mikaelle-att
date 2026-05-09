@@ -11,20 +11,24 @@ const MAX_RESTARTS_PER_HOUR = 10;
 let restartTimes = [];
 
 function log(message) {
-  const timestamp = new Date().toLocaleString('pt-BR');
-  console.log(`[${timestamp}] [24H] ${message}`);
+  // Logs mínimos para não encher cache do Render
+  if (message.includes('Sistema 24H iniciado') ||
+    message.includes('Limite de restarts') ||
+    message.includes('Bot encerrado')) {
+    console.log(`[24H] ${message}`);
+  }
 }
 
 function canRestart() {
   const now = Date.now();
   // Remove restarts antigos (mais de 1 hora)
   restartTimes = restartTimes.filter(time => now - time < 3600000);
-  
+
   if (restartTimes.length >= MAX_RESTARTS_PER_HOUR) {
     log(`❌ Limite de restarts atingido (${restartTimes.length}/hora). Aguardando...`);
     return false;
   }
-  
+
   restartTimes.push(now);
   return true;
 }
@@ -37,7 +41,7 @@ function startBot() {
   }
 
   restartCount++;
-  log(`🚀 Iniciando bot (restart #${restartCount})`);
+  // Sem log de restart para não encher cache
 
   botProcess = spawn('node', ['src/index.js'], {
     cwd: __dirname,
@@ -50,22 +54,19 @@ function startBot() {
       log('✅ Bot encerrado normalmente');
       process.exit(0);
     } else {
-      log(`❌ Bot crashou com código ${code}`);
-      log('🔄 Reiniciando em 5 segundos...');
+      // Sem logs de crash para não encher cache
       setTimeout(startBot, 5000);
     }
   });
 
   botProcess.on('error', (error) => {
-    log(`❌ Erro ao iniciar bot: ${error.message}`);
-    log('🔄 Tentando novamente em 10 segundos...');
+    // Sem logs de erro para não encher cache
     setTimeout(startBot, 10000);
   });
 }
 
-// Graceful shutdown
+// Graceful shutdown (sem logs para não encher cache)
 process.on('SIGINT', () => {
-  log('📡 Recebido SIGINT, encerrando...');
   if (botProcess) {
     botProcess.kill('SIGINT');
   }
@@ -73,7 +74,6 @@ process.on('SIGINT', () => {
 });
 
 process.on('SIGTERM', () => {
-  log('📡 Recebido SIGTERM, encerrando...');
   if (botProcess) {
     botProcess.kill('SIGTERM');
   }

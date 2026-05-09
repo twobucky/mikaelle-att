@@ -7,11 +7,6 @@ const __dirname = dirname(__filename);
 
 const HEALTH_FILE = join(__dirname, 'data', 'bot-health.json');
 
-function log(message) {
-  const timestamp = new Date().toLocaleString('pt-BR');
-  console.log(`[${timestamp}] [HEALTH] ${message}`);
-}
-
 function updateHealth(status) {
   try {
     const healthData = {
@@ -29,9 +24,9 @@ function updateHealth(status) {
     }
 
     fs.writeFileSync(HEALTH_FILE, JSON.stringify(healthData, null, 2));
-    log(`📊 Saúde atualizada: ${status}`);
+    // Sem logs para não encher cache do Render
   } catch (error) {
-    log(`❌ Erro ao atualizar saúde: ${error.message}`);
+    // Sem logs para não encher cache do Render
   }
 }
 
@@ -42,7 +37,7 @@ function getHealth() {
       return data;
     }
   } catch (error) {
-    log(`❌ Erro ao ler saúde: ${error.message}`);
+    // Sem logs para não encher cache do Render
   }
   return null;
 }
@@ -59,9 +54,8 @@ function heartbeat() {
 function checkBotResponse() {
   const now = Date.now();
   const timeSinceLastHeartbeat = now - lastHeartbeat;
-  
+
   if (timeSinceLastHeartbeat > 60000) { // 1 minuto sem heartbeat
-    log('⚠️ Bot não respondeu há mais de 1 minuto');
     updateHealth('unresponsive');
   }
 }
