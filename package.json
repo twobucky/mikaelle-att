@@ -1,0 +1,20 @@
+{
+  "name": "discord-mod-bot",
+  "version": "1.0.0",
+  "description": "Bot de moderação: logs, warns, tickets, anti-raid",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.19.2",
+    "@stablelib/xchacha20poly1305": "^2.0.1",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
+  }
+}

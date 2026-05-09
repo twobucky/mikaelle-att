@@ -1,0 +1,44 @@
+# Node modules
+node_modules
+npm-debug.log*
+
+# Logs
+logs
+*.log
+
+# Runtime data
+data/bot-health.json
+data/allowedUsers.json
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Scripts
+scripts
+*.sh
+
+# Documentation
+*.md
