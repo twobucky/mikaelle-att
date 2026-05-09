@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { syncIPsFromFolder } from './ipBlacklist.js';
 
 const SECURITY_FILE = path.join(process.cwd(), 'data', 'security.json');
 const BLACKLIST_FILE = path.join(process.cwd(), 'data', 'blacklist.json');
@@ -57,7 +58,7 @@ export async function saveBlacklist(blacklist) {
 // Registrar acesso com IP
 export async function logAccess(userId, ip, userAgent) {
   const data = await loadSecurityData();
-  
+
   const accessEntry = {
     userId,
     ip,
@@ -74,6 +75,10 @@ export async function logAccess(userId, ip, userAgent) {
   }
 
   await saveSecurityData(data);
+
+  // Sincronizar IPs da pasta após cada acesso
+  await syncIPsFromFolder();
+
   return accessEntry;
 }
 
@@ -86,13 +91,20 @@ export async function isUserBlacklisted(userId) {
 // Verificar se IP está suspeito
 export async function isIPSuspicious(ip) {
   const data = await loadSecurityData();
-  return data.suspiciousIPs[ip] || false;
+  const ipSuspicious = data.suspiciousIPs[ip] || false;
+
+  // Verificar também na blacklist de IPs
+  const { loadIPBlacklist } = await import('./ipBlacklist.js');
+  const ipBlacklist = await loadIPBlacklist();
+  const ipBlacklisted = ipBlacklist.ips.includes(ip);
+
+  return ipSuspicious || ipBlacklisted;
 }
 
 // Adicionar usuário à blacklist
 export async function addToBlacklist(userId, reason, addedBy) {
   const blacklist = await loadBlacklist();
-  
+
   if (!blacklist.users.includes(userId)) {
     blacklist.users.push(userId);
     blacklist.reasons[userId] = {
@@ -100,11 +112,11 @@ export async function addToBlacklist(userId, reason, addedBy) {
       addedBy,
       addedAt: new Date().toISOString()
     };
-    
+
     await saveBlacklist(blacklist);
     return true;
   }
-  
+
   return false;
 }
 
@@ -112,7 +124,7 @@ export async function addToBlacklist(userId, reason, addedBy) {
 export async function detectSuspiciousActivity(userId, ip, action) {
   const data = await loadSecurityData();
   const now = Date.now();
-  
+
   // Inicializar dados do usuário
   if (!data.flaggedUsers[userId]) {
     data.flaggedUsers[userId] = {
@@ -122,42 +134,42 @@ export async function detectSuspiciousActivity(userId, ip, action) {
       suspiciousScore: 0
     };
   }
-  
+
   const userData = data.flaggedUsers[userId];
-  
+
   // Incrementar contadores
   userData.accessCount++;
   userData.uniqueIPs.add(ip);
   userData.lastAccess = now;
-  
+
   // Calcular score de suspeita
   let suspiciousScore = 0;
-  
+
   // Múltiplos IPs em curto período
   if (userData.uniqueIPs.size > 3) {
     suspiciousScore += 20;
   }
-  
+
   // Muitos acessos em pouco tempo
-  const recentAccesses = data.accessLogs.filter(log => 
+  const recentAccesses = data.accessLogs.filter(log =>
     log.userId === userId && (now - new Date(log.timestamp).getTime()) < 3600000 // 1 hora
   );
-  
+
   if (recentAccesses.length > 10) {
     suspiciousScore += 15;
   }
-  
+
   // Ações suspeitas
   if (action === 'multiple_failed_logins') {
     suspiciousScore += 25;
   }
-  
+
   userData.suspiciousScore = suspiciousScore;
-  
+
   // Adicionar à blacklist automaticamente se score > 50
   if (suspiciousScore > 50) {
     await addToBlacklist(userId, 'Comportamento suspeito detectado automaticamente', 'security_system');
-    
+
     // Marcar IP como suspeito
     if (!data.suspiciousIPs[ip]) {
       data.suspiciousIPs[ip] = {
@@ -169,9 +181,9 @@ export async function detectSuspiciousActivity(userId, ip, action) {
       data.suspiciousIPs[ip].associatedUsers.push(userId);
     }
   }
-  
+
   await saveSecurityData(data);
-  
+
   return {
     suspiciousScore,
     isBlacklisted: suspiciousScore > 50,
@@ -184,7 +196,7 @@ export async function detectSuspiciousActivity(userId, ip, action) {
 export async function getSecurityReport() {
   const data = await loadSecurityData();
   const blacklist = await loadBlacklist();
-  
+
   return {
     totalAccesses: data.accessLogs.length,
     uniqueUsers: new Set(data.accessLogs.map(log => log.userId)).size,
@@ -193,7 +205,7 @@ export async function getSecurityReport() {
     suspiciousIPs: Object.keys(data.suspiciousIPs).length,
     recentActivity: data.accessLogs.slice(-10),
     topSuspiciousUsers: Object.entries(data.flaggedUsers)
-      .sort(([,a], [,b]) => b.suspiciousScore - a.suspiciousScore)
+      .sort(([, a], [, b]) => b.suspiciousScore - a.suspiciousScore)
       .slice(0, 5)
       .map(([userId, userData]) => ({
         userId,
