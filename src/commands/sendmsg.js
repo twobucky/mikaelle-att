@@ -73,8 +73,6 @@ export async function execute(interaction) {
       ),
     );
   } catch (error) {
-    console.error('Erro ao enviar mensagem:', error);
-    
     // Tentar editar a resposta se ainda não foi respondido
     if (!interaction.replied) {
       await interaction.reply({

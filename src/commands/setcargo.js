@@ -25,7 +25,7 @@ export async function execute(interaction) {
   // Verificar permissões
   if (!canManageGuild(interaction)) {
     return interaction.reply({
-      content: '❌ **Acesso negado:** Você precisa de permissão de **Gerir Cargos** para usar este comando.',
+      content: '❌ **Acesso negado:** Você precisa de **Gerir Cargos** para usar este comando.',
       ephemeral: true,
     });
   }
@@ -50,7 +50,7 @@ export async function execute(interaction) {
     });
   }
 
-  // Verificar se o bot pode atribuir este cargo específico
+  // Verificar se o usuário pode gerenciar o cargo alvo
   if (targetRole.position >= botMember.roles.highest.position) {
     return interaction.reply({
       content: `❌ **Erro:** Não posso atribuir o cargo **${targetRole.name}** porque está acima ou na mesma posição que meu cargo mais alto.`,
@@ -58,7 +58,7 @@ export async function execute(interaction) {
     });
   }
 
-  // Verificar se o usuário pode atribuir este cargo
+  // Verificar se o usuário pode atribuir o cargo alvo
   if (targetRole.position >= interaction.member.roles.highest.position) {
     return interaction.reply({
       content: `❌ **Erro:** Você não pode atribuir o cargo **${targetRole.name}** porque está acima ou na mesma posição que seu cargo mais alto.`,
@@ -82,24 +82,13 @@ export async function execute(interaction) {
     await interaction.editReply({
       content: `✅ **Sucesso:** Cargo **${targetRole.name}** atribuído a ${targetUser} com sucesso!`,
     });
-
   } catch (error) {
-    console.error('[SetCargo] Erro ao atribuir cargo:', error);
-    
     let errorMessage = '❌ **Erro ao atribuir cargo:** ';
+    errorMessage += error.message || 'Ocorreu um erro desconhecido.';
     
-    if (error.code === 50013) {
-      errorMessage += 'Permissões insuficientes para gerenciar este cargo.';
-    } else if (error.code === 10011) {
-      errorMessage += 'Cargo não encontrado.';
-    } else if (error.code === 50035) {
-      errorMessage += 'Parâmetros inválidos.';
-    } else {
-      errorMessage += error.message || 'Ocorreu um erro desconhecido.';
-    }
-
     await interaction.editReply({
       content: errorMessage,
+      ephemeral: true,
     });
   }
 }
