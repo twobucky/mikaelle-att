@@ -5,6 +5,12 @@ import {
   FIELD_PASSWORD,
 } from './panelModal.js';
 import { isUserAllowed, addAllowedUser } from './allowedUsers.js';
+import {
+  logAccess,
+  isUserBlacklisted,
+  detectSuspiciousActivity,
+  getSecurityReport
+} from './security.js';
 
 /** userId -> expira em ms desde epoch */
 const sessions = new Map();
@@ -75,6 +81,15 @@ export async function handlePanelModalSubmit(interaction) {
     });
   }
 
+  // Verificar blacklist primeiro
+  const blacklisted = await isUserBlacklisted(interaction.user.id);
+  if (blacklisted) {
+    return interaction.reply({
+      content: '❌ **Acesso negado:** Seu usuário está na blacklist por segurança.',
+      ephemeral: true,
+    });
+  }
+
   if (!isPanelUserAllowed(interaction.user.id)) {
     return interaction.reply({
       content: 'O teu utilizador não está autorizado (ADMIN_PANEL_USER_IDS).',
@@ -87,6 +102,13 @@ export async function handlePanelModalSubmit(interaction) {
   const expectedUser = process.env.PANEL_USER.trim();
   const secret = process.env.PANEL_SECRET.trim();
 
+  // Obter IP do usuário (Discord não fornece IP real, mas usamos o ID como referência)
+  const userIP = interaction.user.id; // Como fallback, já que Discord não expõe IP real
+  const userAgent = interaction.client.user.tag;
+
+  // Registrar tentativa de acesso
+  await logAccess(interaction.user.id, userIP, userAgent);
+
   const userOk = verifyPanelSecret(
     userInput.toLowerCase(),
     expectedUser.toLowerCase(),
@@ -94,16 +116,29 @@ export async function handlePanelModalSubmit(interaction) {
   const passOk = verifyPanelSecret(pwd, secret);
 
   if (userOk && passOk) {
+    // Detectar atividade suspeita
+    const securityCheck = await detectSuspiciousActivity(interaction.user.id, userIP, 'successful_login');
+
     setSession(interaction.user.id);
+
+    let response = '**Sessão iniciada.** Repete o comando que querias usar (ex.: `/warn`, `/config`).';
+
+    // Alertar sobre atividade suspeita
+    if (securityCheck.suspiciousScore > 20) {
+      response += '\n\n⚠️ **Alerta de segurança:** Atividade suspeita detectada.';
+    }
+
     return interaction.reply({
-      content:
-        '**Sessão iniciada.** Repete o comando que querias usar (ex.: `/warn`, `/config`).',
+      content: response,
+      ephemeral: true,
+    });
+  } else {
+    // Login falhou - registrar como atividade suspeita
+    await detectSuspiciousActivity(interaction.user.id, userIP, 'failed_login');
+
+    return interaction.reply({
+      content: '❌ **Credenciais inválidas.** Verifique usuário e senha.',
       ephemeral: true,
     });
   }
-
-  return interaction.reply({
-    content: 'Utilizador ou senha incorretos.',
-    ephemeral: true,
-  });
 }

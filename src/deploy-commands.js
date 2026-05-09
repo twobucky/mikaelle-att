@@ -13,6 +13,7 @@ import { data as spammsg } from './commands/spammsg.js';
 import { data as sendmsg } from './commands/sendmsg.js';
 import { data as manageusers } from './commands/manageusers.js';
 import { data as setcargo } from './commands/setcargo.js';
+import { data as security } from './commands/security.js';
 
 const commands = [
   config.toJSON(),
@@ -28,6 +29,7 @@ const commands = [
   sendmsg.toJSON(),
   manageusers.toJSON(),
   setcargo.toJSON(),
+  security.toJSON(),
 ];
 
 const token = process.env.DISCORD_TOKEN?.trim();

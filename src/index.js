@@ -36,6 +36,7 @@ import { execute as execSpammsg } from './commands/spammsg.js';
 import { execute as execSendmsg } from './commands/sendmsg.js';
 import { execute as execManageusers } from './commands/manageusers.js';
 import { execute as execSetcargo } from './commands/setcargo.js';
+import { execute as execSecurity } from './commands/security.js';
 import { execute as execMikaelle } from './commands/mikaelle.js';
 
 const handlers = {
@@ -52,18 +53,19 @@ const handlers = {
   sendmsg: execSendmsg,
   manageusers: execManageusers,
   setcargo: execSetcargo,
+  security: execSecurity,
   mikaelle: execMikaelle,
 };
 
-/** Todos os comandos slash exigem sessão, exceto `/mkadm login` e `/manageusers`. Sem sessão → abre modal de login. */
+/** Todos os comandos slash exigem sessão, exceto `/mkadm login`, `/manageusers` e `/security`. Sem sessão → abre modal de login. */
 async function requirePanelForCommand(interaction) {
   if (interaction.commandName === 'mkadm') {
     const sub = interaction.options.getSubcommand(false);
     if (sub === 'login') return true;
   }
 
-  // Comando manageusers não exige sessão (só precisa de Admin)
-  if (interaction.commandName === 'manageusers') {
+  // Comandos manageusers e security não exigem sessão (só precisam de Admin)
+  if (interaction.commandName === 'manageusers' || interaction.commandName === 'security') {
     return true;
   }
 
