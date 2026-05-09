@@ -26,5 +26,13 @@ USER nodejs
 # Expor porta (se necessário para health checks)
 EXPOSE 3000
 
+# Script de registro de comandos
+COPY deploy-commands.js ./
+COPY src/commands/ ./src/commands/
+
+# Script de startup que registra comandos e inicia bot
+COPY start.sh ./
+RUN chmod +x start.sh
+
 # Comando para iniciar o bot
-CMD ["node", "bot-24h.js"]
+CMD ["./start.sh"]
