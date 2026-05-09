@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { syncIPsFromFolder } from './ipBlacklist.js';
 
 const SECURITY_FILE = path.join(process.cwd(), 'data', 'security.json');
 const BLACKLIST_FILE = path.join(process.cwd(), 'data', 'blacklist.json');
@@ -76,9 +75,6 @@ export async function logAccess(userId, ip, userAgent) {
 
   await saveSecurityData(data);
 
-  // Sincronizar IPs da pasta após cada acesso
-  await syncIPsFromFolder();
-
   return accessEntry;
 }
 
@@ -91,14 +87,7 @@ export async function isUserBlacklisted(userId) {
 // Verificar se IP está suspeito
 export async function isIPSuspicious(ip) {
   const data = await loadSecurityData();
-  const ipSuspicious = data.suspiciousIPs[ip] || false;
-
-  // Verificar também na blacklist de IPs
-  const { loadIPBlacklist } = await import('./ipBlacklist.js');
-  const ipBlacklist = await loadIPBlacklist();
-  const ipBlacklisted = ipBlacklist.ips.includes(ip);
-
-  return ipSuspicious || ipBlacklisted;
+  return data.suspiciousIPs[ip] || false;
 }
 
 // Adicionar usuário à blacklist
